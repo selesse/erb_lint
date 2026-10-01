@@ -47,12 +47,21 @@ module ERBLint
       end
 
       def cache_key
-        Digest::SHA1.hexdigest("#{rubocop_gem_versions}#{portable_rubocop_config}")
+        Digest::SHA1.hexdigest("#{rubocop_source_checksum}#{portable_rubocop_config}")
       end
 
       private
 
-      # Plugins such as rubocop-rails affect offenses as much as RuboCop itself.
+      # RuboCop's own result cache hashes the contents of every loaded file, so
+      # this covers plugins, gems, and project-local cops loaded through
+      # `require:`. It's memoized, which is fine because the runner only asks for
+      # cache keys once every linter has loaded its config. Before RuboCop 1.82.1
+      # it stays nil unless RuboCop's own cache computed it, so fall back to the
+      # versions of `rubocop*` gems.
+      def rubocop_source_checksum
+        ::RuboCop::ResultCache.source_checksum || rubocop_gem_versions.join(",")
+      end
+
       def rubocop_gem_versions
         Gem.loaded_specs.each_value.filter_map { |spec| spec.full_name if spec.name.start_with?("rubocop") }.sort
       end
