@@ -80,7 +80,7 @@ module ERBLint
 
       runner = ERBLint::Runner.new(file_loader, @config, @options[:disable_inline_configs])
 
-      @cache.set_runner_checksum(runner.checksum) if cache?
+      @cache.runner_cache_key = runner.cache_key if cache?
 
       file_content = nil
 

@@ -70,9 +70,10 @@ module ERBLint
       @offenses = []
     end
 
-    # Allows linters to specify their own checksums to bust caches, etc.
-    # for dependencies and things not represented in the erblint config.
-    def checksum
+    # Returns a string that changes whenever something besides the linter's
+    # config and the linted file affects its offenses, such as another config
+    # file or a gem version, so that `--cache` doesn't reuse stale results.
+    def cache_key
       nil
     end
 

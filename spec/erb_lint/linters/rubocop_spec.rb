@@ -335,6 +335,25 @@ describe ERBLint::Linters::Rubocop do
     it { expect(corrected_content).to(eq("<% dont_auto_correct_me(safe_method(dont_auto_correct_me)) %>\n")) }
   end
 
+  describe "#cache_key" do
+    let(:linter_config) do
+      described_class.config_schema.new(rubocop_config: { inherit_from: inherit_from_filename })
+    end
+    let(:nested_config) { { "Layout/LineLength" => { "Max" => 100 } } }
+    let(:file) { "" }
+
+    it "changes when an inherited RuboCop config changes" do
+      cache_key = linter.cache_key
+      allow(RuboCop::ConfigLoader).to(
+        receive(:load_file)
+          .with(a_string_ending_with(inherit_from_filename))
+          .and_return({ "Layout/LineLength" => { "Max" => 120 } }),
+      )
+
+      expect(described_class.new(file_loader, linter_config).cache_key).not_to(eq(cache_key))
+    end
+  end
+
   private
 
   def arbitrary_error_message(range)

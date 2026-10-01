@@ -42,11 +42,11 @@ module ERBLint
       @offenses.concat(offenses)
     end
 
-    def checksum
+    def cache_key
       digester = Digest::SHA1.new
       @linters.each do |linter|
-        linter_checksum = linter.checksum
-        digester.update(linter_checksum) if linter_checksum
+        linter_cache_key = linter.cache_key
+        digester.update(linter_cache_key) if linter_cache_key
       end
       digester.hexdigest
     end

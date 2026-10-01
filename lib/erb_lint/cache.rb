@@ -67,9 +67,7 @@ module ERBLint
       FileUtils.rm_r(@cache_dir)
     end
 
-    def set_runner_checksum(checksum)
-      @runner_checksum = checksum
-    end
+    attr_writer :runner_cache_key
 
     private
 
@@ -80,7 +78,7 @@ module ERBLint
       mode = File.stat(filename).mode
 
       digester.update(
-        "#{mode}#{config.to_hash}#{ERBLint::VERSION}#{@runner_checksum}#{file_content}",
+        "#{mode}#{config.to_hash}#{ERBLint::VERSION}#{@runner_cache_key}#{file_content}",
       )
       digester.hexdigest
     rescue Errno::ENOENT

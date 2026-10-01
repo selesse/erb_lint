@@ -46,13 +46,9 @@ module ERBLint
         end
       end
 
-      def checksum
-        digester = Digest::SHA1.new
+      def cache_key
         gemfile_lock = File.read("Gemfile.lock") if File.exist?("Gemfile.lock")
-        digester.update(
-          "#{gemfile_lock}#{@rubocop_config.to_hash}"
-          )
-        digester.hexdigest
+        Digest::SHA1.hexdigest("#{gemfile_lock}#{@rubocop_config.to_hash}")
       end
 
       private
