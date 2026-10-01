@@ -352,6 +352,38 @@ describe ERBLint::Linters::Rubocop do
 
       expect(described_class.new(file_loader, linter_config).cache_key).not_to(eq(cache_key))
     end
+
+    def stub_loaded_gems(versions)
+      loaded_specs = versions.to_h { |name, version| [name, Gem::Specification.new(name, version)] }
+      allow(Gem).to(receive(:loaded_specs).and_return(loaded_specs))
+    end
+
+    it "changes when a RuboCop gem is upgraded" do
+      stub_loaded_gems("rubocop" => "1.0.0", "rubocop-rails" => "2.0.0")
+      cache_key = linter.cache_key
+      stub_loaded_gems("rubocop" => "1.0.0", "rubocop-rails" => "2.0.1")
+
+      expect(linter.cache_key).not_to(eq(cache_key))
+    end
+
+    it "does not change when other gems are upgraded" do
+      stub_loaded_gems("rubocop" => "1.0.0", "rake" => "13.0.0")
+      cache_key = linter.cache_key
+      stub_loaded_gems("rubocop" => "1.0.0", "rake" => "13.0.1")
+
+      expect(linter.cache_key).to(eq(cache_key))
+    end
+
+    it "does not depend on where the project is checked out" do
+      linter_config = described_class.config_schema.new(rubocop_config: { AllCops: { Exclude: ["vendor/**/*"] } })
+      cache_keys = Array.new(2) do
+        Dir.mktmpdir do |dir|
+          Dir.chdir(dir) { described_class.new(ERBLint::FileLoader.new(Dir.pwd), linter_config).cache_key }
+        end
+      end
+
+      expect(cache_keys.first).to(eq(cache_keys.last))
+    end
   end
 
   private

@@ -47,11 +47,29 @@ module ERBLint
       end
 
       def cache_key
-        gemfile_lock = File.read("Gemfile.lock") if File.exist?("Gemfile.lock")
-        Digest::SHA1.hexdigest("#{gemfile_lock}#{@rubocop_config.to_hash}")
+        Digest::SHA1.hexdigest("#{rubocop_gem_versions}#{portable_rubocop_config}")
       end
 
       private
+
+      # Plugins such as rubocop-rails affect offenses as much as RuboCop itself.
+      def rubocop_gem_versions
+        Gem.loaded_specs.each_value.filter_map { |spec| spec.full_name if spec.name.start_with?("rubocop") }.sort
+      end
+
+      # RuboCop expands `Exclude` patterns to absolute paths, which would tie
+      # cached results to the directory the project is checked out in.
+      def portable_rubocop_config
+        base_path = File.expand_path(@file_loader.base_path)
+        @rubocop_config.to_hash.to_h do |name, config|
+          next [name, config] unless config.is_a?(Hash) && config["Exclude"].is_a?(Array)
+
+          excludes = config["Exclude"].map do |pattern|
+            pattern.is_a?(String) ? ::RuboCop::PathUtil.relative_path(pattern, base_path) : pattern
+          end
+          [name, config.merge("Exclude" => excludes)]
+        end
+      end
 
       def descendant_nodes(processed_source)
         processed_source.ast.descendants(:erb)
